@@ -1,5 +1,6 @@
 # This example requires the 'message_content' intent.
 
+import token
 import discord
 from osrs_api.const import AccountType
 from osrs_api import Hiscores
@@ -143,4 +144,4 @@ async def update_user_role(user_id, guild):
         # The user doesn't have a linked RS account
         print(f"User {user_id} does not have a linked RS account")
     
-client.run('MTA5NTExMjY1NTAyMDIzMjc0NQ.GIeYjS.s3BXlBs4EPJpDTptqrXBf8yVJeMKGuw2ezR-yc')
+client.run(token.token)
