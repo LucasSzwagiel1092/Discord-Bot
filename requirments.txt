@@ -1,0 +1,3 @@
+discord 
+osrs_api 
+sqlite3
