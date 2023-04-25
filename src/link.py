@@ -29,7 +29,7 @@ async def link_account(message, db_conn):
         await message.channel.send(f"The Runescape account {username} is already linked to the Discord account {linked_user.mention}. Please contact an administrator if you believe there is an error.")
     elif not is_valid_rs_account(username):
         # The username is not a valid Runescape account
-        await message.channel.send(f"The account {username} does not exist. Please check your spelling or create a new account if you haven't already.")
+        await message.channel.send(f"The account {username} is not on the highscores.")
     else:
         # Check if the user is already linked to a different RuneScape account
         cursor = db_conn.cursor()
@@ -63,7 +63,7 @@ def is_valid_rs_account(username):
         Hiscores(username)
         return True
     except Exception as e:
-        if "_is_bad_username" in str(e):
+        if "Unable to find" in str(e):
             return False
         else:
             raise e

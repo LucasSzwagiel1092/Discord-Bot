@@ -1,6 +1,7 @@
+#ehb.py
 import requests
 
-def get_ehb(username):
+async def get_ehb(username):
     search_url = f"https://api.wiseoldman.net/v2/players/search?username={username}&limit=2"
     search_response = requests.get(search_url)
 
@@ -18,5 +19,3 @@ def get_ehb(username):
             print(f"Failed to retrieve EHB for player {username}: {ehb_response.status_code}")
     else:
         print(f"Player {username} not found.")
-
-print(get_ehb('Iron Lukeout'))

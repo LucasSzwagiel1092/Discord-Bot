@@ -3,7 +3,7 @@
 import discord
 from osrs_api import Hiscores
 from osrs_api.const import AccountType
-import get_ehb
+import ehb
 
 async def on_message(message, guild, db_conn):
     if message.content.startswith("!update"):
@@ -33,7 +33,7 @@ async def update_user_role(message, guild, db_conn):
     print(username)
 
     # Check the user's EHB
-    ehb = get_ehb(username)
+    ehb_value = await ehb.get_ehb(username)
 
     # Define a dictionary mapping total levels to Discord roles
     ehb_roles = {
@@ -44,31 +44,29 @@ async def update_user_role(message, guild, db_conn):
         range(1000, 9999): "Wrath",
     }
 
+    # Define a dictionary mapping total levels to Discord roles
+    level_roles = {
+        range(1250, 1500): "Squire",
+        range(1500, 1750): "Infantry",
+        range(1750, 2000): "Superior",
+        range(2000, 3000): "Priest",
+    }
+    
     # Find the highest total level in the dictionary that the user's level is greater than or equal to
     user_role = None
     for ehb_range, role_name in ehb_roles.items():
-        if ehb >= ehb_range.start:
+        if ehb_value >= ehb_range.start:
                 user_role = role_name
         else:
-            break
+
+            # Find the highest total level in the dictionary that the user's level is greater than or equal to
+            user_role = None
+            for level_range, role_name in level_roles.items():
+                if total_level >= level_range.start:
+                    user_role = role_name
+                else:
+                    break
     
-    else:
-        # Define a dictionary mapping total levels to Discord roles
-        level_roles = {
-            range(1250, 1500): "Squire",
-            range(1500, 1750): "Infantry",
-            range(1750, 2000): "Superior",
-            range(2000, 3000): "Priest",
-        }
-
-        # Find the highest total level in the dictionary that the user's level is greater than or equal to
-        user_role = None
-        for level_range, role_name in level_roles.items():
-            if total_level >= level_range.start:
-                user_role = role_name
-            else:
-                break
-
     if user_role is None:
         # User's level is not high enough for any role
         await message.channel.send("Your level is not high enough for any role")
