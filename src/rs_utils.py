@@ -6,12 +6,7 @@ import requests
 import config
 import discord
 
-def get_rs_username(db_conn, user_id):
-    cursor = db_conn.cursor()
-    cursor.execute("SELECT rs_username FROM user_links WHERE discord_id = ?", (user_id,))
-    row = cursor.fetchone()
-    cursor.close()
-    return row[0] if row else None
+global db_conn
 
 def get_total_level(username):
     return Hiscores(username, AccountType.NORMAL).total_level

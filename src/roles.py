@@ -1,12 +1,22 @@
 # roles.py
 
+import sqlite3
 import discord
 import rs_utils
 import config
+import os
+from dotenv import load_dotenv
 
-async def on_message(message, guild, db_conn):
-    if message.content.startswith("!update"):
-        await update_user_roles(guild, db_conn)
+load_dotenv()
+
+# SQL
+db_path = os.environ.get('DB_PATH')
+db_conn = sqlite3.connect(db_path)
+
+async def on_message(message, guild):
+    if message.content == "!update" and message.author.guild_permissions.administrator:
+        await update_user_roles(guild)
+        await message.channel.send("All users roles have been updated")
 
 async def update_user_role(message, guild):
     # Get the linked RS username for the user
@@ -69,7 +79,8 @@ async def update_user_role(message, guild):
     # Send success message
     await message.channel.send(f"Your role has been updated to {new_role_obj.name}")
 
-async def update_user_roles(guild, db_conn):
+async def update_user_roles(guild):
+
     cursor = db_conn.cursor()
     cursor.execute("SELECT discord_id, rs_username FROM user_links")
     rows = cursor.fetchall()
@@ -109,5 +120,3 @@ async def update_user_roles(guild, db_conn):
 
         new_role_obj = discord.utils.get(guild.roles, name=user_role)
         await member.add_roles(new_role_obj)
-
-    print("User roles have been updated")

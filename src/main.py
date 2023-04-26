@@ -1,7 +1,6 @@
 # main.py
 
 import discord
-import sqlite3
 
 from dotenv import load_dotenv
 import os
@@ -11,14 +10,13 @@ import roles
 load_dotenv()
 
 token = os.environ.get('TOKEN')
-db_path = os.environ.get('DB_PATH')
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True
 client = discord.Client(intents=intents)
 
-# SQL
-db_conn = sqlite3.connect(db_path)
+
 
 @client.event
 async def on_ready():
@@ -36,9 +34,6 @@ async def on_member_join(member):
     # Send a welcome message to the user
     welcome_channel = client.get_channel(1096619103537598486) # replace with the ID of your welcome channel
     await welcome_channel.send(f"Welcome to the server, {member.mention}! To link your Runescape account, enter the command `!link <username>` in this channel.")
-    # Add the user to the "Welcome" role
-    welcome_role = discord.utils.get(member.guild.roles, name="Welcome")
-    await member.add_roles(welcome_role)
 
 # Register RS user to discord account
 @client.event
@@ -46,8 +41,8 @@ async def on_message(message):
     if message.author == client.user:
         return
     
-    await link.on_message(message, db_conn)
+    await link.on_message(message)
     
-    await roles.on_message(message, client.get_guild(1095118191916744864), db_conn)
+    await roles.on_message(message, client.get_guild(1095118191916744864))
 
 client.run(token)
