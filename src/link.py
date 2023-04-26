@@ -4,6 +4,7 @@ import sqlite3
 from osrs_api import Hiscores
 import os
 from dotenv import load_dotenv
+import update
 
 load_dotenv()
 
@@ -79,6 +80,7 @@ async def link_account(message):
 
             # Send a confirmation message to the user
             await message.channel.send(f"Your Discord account has been linked to the RuneScape account {username}.")
+            await update.update_user_role(message, message.guild)
 
 async def admin_link_account(message):
     # Check if the user is an admin
