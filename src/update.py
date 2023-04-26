@@ -15,8 +15,7 @@ db_conn = sqlite3.connect(db_path)
 
 async def on_message(message, guild):
     if message.content == "!update" and message.author.guild_permissions.administrator:
-        update_channel = discord.utils.get(guild.channels, id=1100894937614143612)
-        await update_user_roles(guild, update_channel)
+        await update_user_roles(guild)
         await message.channel.send("All users roles have been updated")
 
 async def update_user_role(message, guild):
@@ -44,7 +43,7 @@ async def update_user_role(message, guild):
     # Send success message
     await message.channel.send(f"Your role has been updated to {new_role_obj.name}")
 
-async def update_user_roles(guild, update_channel):
+async def update_user_roles(guild):
     updated_users = []
 
     cursor = db_conn.cursor()
@@ -73,6 +72,7 @@ async def update_user_roles(guild, update_channel):
 
     # Output the updated users and their new role in the update channel
     if updated_users:
+        update_channel = discord.utils.get(guild.channels, id=1100894937614143612)
         await update_channel.send(f"The following users have had their roles updated: {', '.join(updated_users)}")
 
 
