@@ -2,6 +2,7 @@
 
 import sqlite3
 from osrs_api import Hiscores
+import rs_utils
 
 async def on_message(message, db_conn):
     if message.content.startswith("!link"):
@@ -18,10 +19,7 @@ async def link_account(message, db_conn):
     username = " ".join(args[1:])
 
     # Check if the username is already linked to a Discord account
-    cursor = db_conn.cursor()
-    cursor.execute("SELECT discord_id FROM user_links WHERE rs_username = ?", (username,))
-    row = cursor.fetchone()
-    cursor.close()
+    row = await rs_utils.get_rs_username
 
     if row is not None:
         # The username is already linked to a Discord account

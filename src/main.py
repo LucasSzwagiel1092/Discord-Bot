@@ -1,8 +1,6 @@
 # main.py
 
 import discord
-from osrs_api.const import AccountType
-from osrs_api import Hiscores
 import sqlite3
 
 from dotenv import load_dotenv
@@ -27,7 +25,7 @@ async def on_ready():
     print(f'We have logged in as {client.user}')
 
     # Fetch the guild object inside the on_ready coroutine
-    guild = client.get_guild(1095118191916744864)
+    guild = client.guilds[0]
     if guild is not None:
         print(f"Connected to the guild {guild.name}")
     else:
@@ -38,6 +36,9 @@ async def on_member_join(member):
     # Send a welcome message to the user
     welcome_channel = client.get_channel(1096619103537598486) # replace with the ID of your welcome channel
     await welcome_channel.send(f"Welcome to the server, {member.mention}! To link your Runescape account, enter the command `!link <username>` in this channel.")
+    # Add the user to the "Welcome" role
+    welcome_role = discord.utils.get(member.guild.roles, name="Welcome")
+    await member.add_roles(welcome_role)
 
 # Register RS user to discord account
 @client.event

@@ -1,7 +1,22 @@
-#ehb.py
-import requests
+#rs_utils.py
 
-async def get_ehb(username):
+from osrs_api import Hiscores
+from osrs_api.const import AccountType
+import requests
+import config
+import discord
+
+def get_rs_username(db_conn, user_id):
+    cursor = db_conn.cursor()
+    cursor.execute("SELECT rs_username FROM user_links WHERE discord_id = ?", (user_id,))
+    row = cursor.fetchone()
+    cursor.close()
+    return row[0] if row else None
+
+def get_total_level(username):
+    return Hiscores(username, AccountType.NORMAL).total_level
+
+def get_ehb(username):
     search_url = f"https://api.wiseoldman.net/v2/players/search?username={username}&limit=2"
     search_response = requests.get(search_url)
 
@@ -19,3 +34,4 @@ async def get_ehb(username):
             print(f"Failed to retrieve EHB for player {username}: {ehb_response.status_code}")
     else:
         print(f"Player {username} not found.")
+

@@ -1,23 +1,19 @@
 # roles.py
 
 import discord
-from osrs_api import Hiscores
-from osrs_api.const import AccountType
-import ehb
+import rs_utils
+import config
 
 async def on_message(message, guild, db_conn):
     if message.content.startswith("!update"):
-        await update_user_role(message, guild, db_conn)
+        await update_user_roles(guild, db_conn)
 
-async def update_user_role(message, guild, db_conn):
+async def update_user_role(message, guild):
     # Get the linked RS username for the user
     user_id = message.author.id
 
     # Get the user's linked RS username
-    cursor = db_conn.cursor()
-    cursor.execute("SELECT rs_username FROM user_links WHERE discord_id = ?", (user_id,))
-    row = cursor.fetchone()
-    cursor.close()
+    row = rs_utils.get_rs_username
 
     if not row:
         # The user doesn't have a linked RS account
@@ -29,45 +25,24 @@ async def update_user_role(message, guild, db_conn):
     username = row[0]
 
     # Get the user's total level from the hiscores
-    total_level = Hiscores(username, AccountType.NORMAL).total_level
-    print(username)
+    total_level = rs_utils.get_total_level(username)
 
     # Check the user's EHB
-    ehb_value = await ehb.get_ehb(username)
+    ehb_value = rs_utils.get_ehb(username)
 
-    # Define a dictionary mapping total levels to Discord roles
-    ehb_roles = {
-        range(200, 400): "Knight",
-        range(400, 600): "Paladin",
-        range(600, 800): "Beast",
-        range(800, 1000): "Destroyer",
-        range(1000, 9999): "Wrath",
-    }
-
-    # Define a dictionary mapping total levels to Discord roles
-    level_roles = {
-        range(1250, 1500): "Squire",
-        range(1500, 1750): "Infantry",
-        range(1750, 2000): "Superior",
-        range(2000, 3000): "Priest",
-    }
-    
-    # Find the highest total level in the dictionary that the user's level is greater than or equal to
-    user_role = None
-    for ehb_range, role_name in ehb_roles.items():
+    for ehb_range, role_name in config.EHB_ROLES.items():
         if ehb_value >= ehb_range.start:
-                user_role = role_name
-        else:
+            user_role = role_name
+            break
 
-            # Find the highest total level in the dictionary that the user's level is greater than or equal to
-            user_role = None
-            for level_range, role_name in level_roles.items():
-                if total_level >= level_range.start:
-                    user_role = role_name
-                else:
-                    break
-    
-    if user_role is None:
+    # If no EHB role was assigned, assign the appropriate level role
+    if "user_role" not in locals():
+        for level_range, role_name in config.LEVEL_ROLES.items():
+            if total_level >= level_range.start:
+                user_role = role_name
+                break
+
+    if "user_role" not in locals():
         # User's level is not high enough for any role
         await message.channel.send("Your level is not high enough for any role")
         return
@@ -83,7 +58,7 @@ async def update_user_role(message, guild, db_conn):
         return
 
     # Remove any existing roles
-    roles_to_remove = [discord.utils.get(guild.roles, name=role) for role in level_roles.values() if role != user_role]
+    roles_to_remove = [discord.utils.get(guild.roles, name=role) for role in list(config.LEVEL_ROLES.values()) + list(config.EHB_ROLES.values()) if role != user_role]
     roles_to_remove = [role for role in roles_to_remove if role is not None] # filter out None values
     await member.remove_roles(*roles_to_remove)
 
@@ -93,3 +68,46 @@ async def update_user_role(message, guild, db_conn):
 
     # Send success message
     await message.channel.send(f"Your role has been updated to {new_role_obj.name}")
+
+async def update_user_roles(guild, db_conn):
+    cursor = db_conn.cursor()
+    cursor.execute("SELECT discord_id, rs_username FROM user_links")
+    rows = cursor.fetchall()
+    cursor.close()
+
+    for discord_id, rs_username in rows:
+        member = await guild.fetch_member(discord_id)
+        if member is None:
+            continue
+
+        ehb_value = rs_utils.get_ehb(rs_username)
+        total_level = rs_utils.get_total_level(rs_username)
+
+        user_role = None
+        for ehb_range, role_name in config.EHB_ROLES.items():
+            if ehb_value >= ehb_range.start:
+                user_role = role_name
+                break
+
+        if not user_role:
+            for level_range, role_name in config.LEVEL_ROLES.items():
+                if total_level >= level_range.start:
+                    user_role = role_name
+                    break
+
+        if not user_role:
+            continue
+
+        current_roles = {role.name for role in member.roles}
+        if user_role in current_roles:
+            continue
+
+        # Remove any existing roles
+        roles_to_remove = [discord.utils.get(guild.roles, name=role) for role in list(config.LEVEL_ROLES.values()) + list(config.EHB_ROLES.values()) if role != user_role]
+        roles_to_remove = [role for role in roles_to_remove if role is not None] # filter out None values
+        await member.remove_roles(*roles_to_remove)
+
+        new_role_obj = discord.utils.get(guild.roles, name=user_role)
+        await member.add_roles(new_role_obj)
+
+    print("User roles have been updated")
