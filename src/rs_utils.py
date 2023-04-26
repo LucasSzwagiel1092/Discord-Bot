@@ -3,10 +3,6 @@
 from osrs_api import Hiscores
 from osrs_api.const import AccountType
 import requests
-import config
-import discord
-
-global db_conn
 
 def get_total_level(username):
     return Hiscores(username, AccountType.NORMAL).total_level

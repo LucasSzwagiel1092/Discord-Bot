@@ -144,7 +144,7 @@ async def unlink_discord_account(message):
     db_conn.commit()
     cursor.close()
 
-    await message.channel.send(f"Your Discord account has been unlinked from your RuneScape account.")
+    await message.channel.send("Your Discord account has been unlinked from your RuneScape account.")
 
 async def unlink_rs_username(message, rs_username):
     # Check if the user is an admin

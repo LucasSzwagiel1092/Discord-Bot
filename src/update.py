@@ -1,4 +1,4 @@
-# roles.py
+# update.py
 
 import sqlite3
 import discord
@@ -15,7 +15,8 @@ db_conn = sqlite3.connect(db_path)
 
 async def on_message(message, guild):
     if message.content == "!update" and message.author.guild_permissions.administrator:
-        await update_user_roles(guild)
+        update_channel = discord.utils.get(guild.channels, id=1100894937614143612)
+        await update_user_roles(guild, update_channel)
         await message.channel.send("All users roles have been updated")
 
 async def update_user_role(message, guild):
@@ -79,7 +80,8 @@ async def update_user_role(message, guild):
     # Send success message
     await message.channel.send(f"Your role has been updated to {new_role_obj.name}")
 
-async def update_user_roles(guild):
+async def update_user_roles(guild, update_channel):
+    updated_users = []
 
     cursor = db_conn.cursor()
     cursor.execute("SELECT discord_id, rs_username FROM user_links")
@@ -88,35 +90,44 @@ async def update_user_roles(guild):
 
     for discord_id, rs_username in rows:
         member = await guild.fetch_member(discord_id)
-        if member is None:
+        if not member:
             continue
 
-        ehb_value = rs_utils.get_ehb(rs_username)
-        total_level = rs_utils.get_total_level(rs_username)
-
-        user_role = None
-        for ehb_range, role_name in config.EHB_ROLES.items():
-            if ehb_value >= ehb_range.start:
-                user_role = role_name
-                break
-
-        if not user_role:
-            for level_range, role_name in config.LEVEL_ROLES.items():
-                if total_level >= level_range.start:
-                    user_role = role_name
-                    break
-
+        user_role = await get_user_role(guild, rs_username)
         if not user_role:
             continue
 
         current_roles = {role.name for role in member.roles}
-        if user_role in current_roles:
+        if user_role.name in current_roles:
             continue
 
-        # Remove any existing roles
-        roles_to_remove = [discord.utils.get(guild.roles, name=role) for role in list(config.LEVEL_ROLES.values()) + list(config.EHB_ROLES.values()) if role != user_role]
-        roles_to_remove = [role for role in roles_to_remove if role is not None] # filter out None values
-        await member.remove_roles(*roles_to_remove)
+        await remove_old_roles(member, user_role)
+        await member.add_roles(user_role)
 
-        new_role_obj = discord.utils.get(guild.roles, name=user_role)
-        await member.add_roles(new_role_obj)
+        # Add the user and new role to the updated list
+        updated_users.append(f"{rs_username} - {user_role.name}")
+
+    # Output the updated users and their new role in the update channel
+    if updated_users:
+        await update_channel.send(f"The following users have had their roles updated: {', '.join(updated_users)}")
+
+
+async def get_user_role(guild, rs_username):
+    ehb_value = rs_utils.get_ehb(rs_username)
+    total_level = rs_utils.get_total_level(rs_username)
+
+    for ehb_range, role_name in config.EHB_ROLES.items():
+        if ehb_value >= ehb_range.start:
+            return discord.utils.get(guild.roles, name=role_name)
+
+    for level_range, role_name in config.LEVEL_ROLES.items():
+        if total_level >= level_range.start:
+            return discord.utils.get(guild.roles, name=role_name)
+
+    return None
+
+
+async def remove_old_roles(member, user_role):
+    roles_to_remove = (discord.utils.get(member.guild.roles, name=role) for role in
+                   set(config.LEVEL_ROLES.values()) | set(config.EHB_ROLES.values()) if role != user_role.name)
+    await member.remove_roles(*(role for role in roles_to_remove if role))

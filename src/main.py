@@ -5,7 +5,7 @@ import discord
 from dotenv import load_dotenv
 import os
 import link
-import roles
+import update
 
 load_dotenv()
 
@@ -43,6 +43,6 @@ async def on_message(message):
     
     await link.on_message(message)
     
-    await roles.on_message(message, client.get_guild(1095118191916744864))
+    await update.on_message(message, client.get_guild(1095118191916744864))
 
 client.run(token)
